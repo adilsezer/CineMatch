@@ -1,0 +1,21 @@
+# .NET
+/bin/
+/obj/
+*.user
+*.suo
+*.sln.docstates
+*.dbmdl
+.vscode/
+
+# ASP.NET
+wwwroot/
+
+# Node.js
+/node_modules/
+/build/
+/dist/
+.env
+.DS_Store
+
+# Miscellaneous
+*.log
