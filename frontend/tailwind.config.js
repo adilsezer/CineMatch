@@ -1,34 +1,52 @@
-/** @type {import('tailwindcss').Config} */
 // tailwind.config.js
 module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}", // Adjust according to your project structure
-    "./public/index.html",
-  ],
+  content: ["./src/**/*.{js,jsx,ts,tsx}", "./public/index.html"],
   theme: {
     extend: {
       colors: {
-        primary: "var(--color-primary)",
-        secondary: "var(--color-secondary)",
-        accent: "var(--color-accent)",
-        background: "var(--color-background)",
-        surface: "var(--color-surface)", // Added surface color
-        text: "var(--color-text)",
-        muted: "var(--color-muted)",
+        primary: {
+          DEFAULT: "#14B8A6",
+          dark: "#0D9488",
+          light: "#2DD4BF",
+        },
+        secondary: {
+          DEFAULT: "#F87171",
+          dark: "#DC2626",
+          light: "#FCA5A5",
+        },
+        accent: {
+          DEFAULT: "#FBBF24",
+          dark: "#F59E0B",
+          light: "#FCD34D",
+        },
+        background: {
+          DEFAULT: "#F3F4F6",
+          dark: "#E5E7EB",
+        },
+        surface: {
+          DEFAULT: "#FFFFFF",
+          dark: "#F9FAFB",
+        },
+        text: {
+          DEFAULT: "#111827",
+          muted: "#6B7280",
+        },
+        muted: {
+          DEFAULT: "#6B7280",
+        },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "sans-serif"],
-        serif: ["var(--font-serif)", "serif"],
+        sans: ["Inter", "sans-serif"],
+        serif: ["Merriweather", "serif"],
       },
       fontSize: {
-        base: "var(--font-size-base)",
-        lg: "var(--font-size-lg)",
-        xl: "var(--font-size-xl)",
-        xxl: "var(--font-size-xxl)", // Added xxl font size
+        base: "1rem",
+        lg: "1.125rem",
+        xl: "1.25rem",
+        "2xl": "1.5rem",
+        "3xl": "1.875rem",
       },
     },
   },
-  plugins: [
-    require("@tailwindcss/line-clamp"), // Ensure this plugin is installed
-  ],
+  plugins: [require("@tailwindcss/line-clamp")],
 };

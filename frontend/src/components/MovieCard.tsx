@@ -1,4 +1,4 @@
-// MovieCard.jsx
+/* src/components/MovieCard.tsx */
 import React from "react";
 
 interface Movie {
@@ -15,16 +15,16 @@ interface MovieCardProps {
 
 const MovieCard: React.FC<MovieCardProps> = ({ movie, onRemove }) => {
   return (
-    <div className="card flex flex-col h-full p-4 border border-gray-200 rounded-md shadow-sm">
+    <div className="flex flex-col h-full bg-surface rounded-lg overflow-hidden shadow-md transition-transform transform hover:scale-105">
       {movie.posterPath && (
         <img
           src={movie.posterPath}
           alt={movie.title}
-          className="w-full h-48 object-cover rounded-md"
+          className="w-full h-64 object-cover"
         />
       )}
-      <div className="flex flex-col flex-grow mt-4">
-        <h2 className="text-lg font-semibold mb-2">{movie.title}</h2>
+      <div className="flex flex-col flex-grow p-4">
+        <h2 className="text-xl font-semibold mb-2 text-text">{movie.title}</h2>
         <p className="text-muted text-sm line-clamp-3">
           {movie.overview.length > 100
             ? `${movie.overview.substring(0, 100)}...`
@@ -32,10 +32,10 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie, onRemove }) => {
         </p>
       </div>
       {onRemove && (
-        <div className="mt-4 flex justify-end">
+        <div className="p-4 flex justify-end">
           <button
             onClick={() => onRemove(movie.id)}
-            className="text-red-500 hover:text-red-700"
+            className="text-red-500 hover:text-red-600"
             aria-label="Remove Movie"
           >
             <svg

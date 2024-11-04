@@ -1,30 +1,8 @@
-/* index.css */
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Define CSS Variables */
-:root {
-  --color-primary: #1e40af; /* Darker Tailwind blue-800 */
-  --color-secondary: #7c3aed; /* Slightly darker Tailwind purple-700 */
-  --color-accent: #d97706; /* Darker Tailwind amber-600 */
-  --color-background: #1f2937; /* Darker Tailwind gray-900 */
-  --color-surface: #111827; /* Deeper background for contrast */
-  --color-text: #e5e7eb; /* Slightly lighter gray for readability */
-  --color-muted: #6b7280; /* More subtle muted color */
-
-  /* Font Sizes */
-  --font-size-base: 1rem; /* 16px */
-  --font-size-lg: 1.125rem; /* 18px */
-  --font-size-xl: 1.25rem; /* 20px */
-  --font-size-xxl: 1.5rem; /* 24px */
-
-  /* Font Families */
-  --font-sans: "Inter", sans-serif;
-  --font-serif: "Merriweather", serif;
-}
-
-/* Apply Global Styles */
 body {
   @apply bg-background text-text font-sans antialiased;
 }
@@ -34,21 +12,26 @@ a {
 }
 
 button {
-  @apply bg-primary text-white px-4 py-2 rounded-md shadow hover:bg-blue-600 transition-all duration-300 ease-in-out;
+  @apply bg-primary text-white px-4 py-2 rounded-md shadow hover:bg-primary-dark transition-all duration-300 ease-in-out;
 }
 
-/* Typography Enhancements for Headings and Paragraphs */
-body,
-h1,
-h2,
+h1 {
+  @apply font-bold text-3xl md:text-3xl text-text;
+}
+
+h2 {
+  @apply font-semibold text-2xl md:text-2xl text-text;
+}
+
 h3,
 h4,
 h5,
-h6,
+h6 {
+  @apply font-semibold text-xl text-text;
+}
+
 p,
-a,
 span,
-button,
 label {
   @apply text-text;
 }
@@ -57,43 +40,25 @@ input {
   @apply bg-surface text-text border border-muted rounded-md focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-50;
 }
 
-h1 {
-  @apply font-bold text-xxl;
+.remove-button {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ff4d4d;
+  color: white;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-h2 {
-  @apply font-semibold text-xl;
-}
-
-h3,
-h4,
-h5,
-h6 {
-  @apply font-semibold text-lg;
-}
-
-/* Custom Utility Classes */
-.btn-secondary {
-  @apply bg-secondary text-white px-4 py-2 rounded-md shadow hover:bg-purple-700 transition-all duration-300 ease-in-out;
-}
-
-.btn-accent {
-  @apply bg-accent text-white px-4 py-2 rounded-md shadow hover:bg-amber-500 transition-all duration-300 ease-in-out;
-}
-
-.card {
-  @apply bg-surface shadow-lg rounded-lg overflow-hidden p-6 border border-muted transition-transform duration-300 hover:scale-105;
-}
-
-.header {
-  @apply bg-primary text-white p-4 shadow-lg sticky top-0 z-10;
-}
-
-.footer {
-  @apply bg-gray-800 text-white p-4 text-center mt-8 shadow-inner;
-}
-
-/* Responsive Containers */
-.container {
-  @apply mx-auto px-4 max-w-screen-lg;
+.remove-button:hover {
+  background-color: #ff3333;
 }
