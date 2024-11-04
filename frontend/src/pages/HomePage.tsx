@@ -23,7 +23,7 @@ const HomePage: React.FC = () => {
   const handleSearch = async (query: string) => {
     try {
       const response = await axios.get<Movie[]>(
-        `https://localhost:7049/api/movies/search?query=${query}`
+        `${process.env.REACT_APP_API_URL}/api/movies/search?query=${query}`
       );
       setSearchResults(response.data);
       setRecommendations([]);
@@ -39,7 +39,7 @@ const HomePage: React.FC = () => {
     ) {
       try {
         const response = await axios.get<Movie>(
-          `https://localhost:7049/api/movies/${movie.id}`
+          `${process.env.REACT_APP_API_URL}/api/movies/${movie.id}`
         );
         setSelectedMovies([...selectedMovies, response.data]);
       } catch (error) {
@@ -60,7 +60,7 @@ const HomePage: React.FC = () => {
         selectedMovieIds: selectedMovies.map((m) => m.id),
       };
       const response = await axios.post<Movie[]>(
-        `https://localhost:7049/api/movies/recommendations`,
+        `${process.env.REACT_APP_API_URL}/api/movies/recommendations`,
         request
       );
       setRecommendations(response.data.slice(0, 4));

@@ -52,6 +52,7 @@ namespace CineMatch.Api.Services
                 }
                 else
                 {
+                    Console.WriteLine($"[Warning] Failed to search movies for query: '{query}'. Status Code: {response.StatusCode}");
                     movies = new List<Movie>();
                 }
             }
@@ -76,10 +77,12 @@ namespace CineMatch.Api.Services
                             Title = data.title,
                             PosterPath = data.poster_path != null ? $"https://image.tmdb.org/t/p/w500{data.poster_path}" : "",
                             Overview = data.overview,
-                            Genres = data.genres != null ? ((IEnumerable<dynamic>)data.genres).Select(g => (string)g.name).ToList() : new List<string>(),
+                            Genres = data.genres != null
+                                ? ((IEnumerable<dynamic>)data.genres).Select(g => (string)g.name).ToList()
+                                : new List<string>(),
                             Actors = data.credits?.cast != null
                                 ? ((IEnumerable<dynamic>)data.credits.cast)
-                                    .Take(3) // Reduced number of actors to simplify
+                                    .Take(1) // Limit to main actor/actress
                                     .Where(a => a != null)
                                     .Select(a => new Person { Id = a.id, Name = a.name })
                                     .ToList()
@@ -88,12 +91,16 @@ namespace CineMatch.Api.Services
                                 ? ((IEnumerable<dynamic>)data.credits.crew)
                                     .Where(c => (string)c.job == "Director" && c != null)
                                     .Select(d => new Person { Id = d.id, Name = d.name })
-                                    .Take(2) // Reduced number of directors to simplify
+                                    .Take(1) // Limit to top director
                                     .ToList()
                                 : new List<Person>(),
                         };
                         _cache.Set(cacheKey, movie, TimeSpan.FromMinutes(60));
                     }
+                }
+                else
+                {
+                    Console.WriteLine($"[Warning] Failed to get details for movie ID: {movieId}. Status Code: {response.StatusCode}");
                 }
             }
             return movie;
@@ -101,81 +108,107 @@ namespace CineMatch.Api.Services
 
         public async Task<List<Movie>> GetRecommendationsAsync(List<int> selectedMovieIds)
         {
-            var recommendationScores = new ConcurrentDictionary<int, int>();
-            var recommendations = new ConcurrentBag<Movie>();
+            // Initialize a thread-safe collection to store all recommendations
+            var allSimilarRecommendations = new ConcurrentBag<Movie>();
+            var allActorRecommendations = new ConcurrentBag<Movie>();
+            var allDirectorRecommendations = new ConcurrentBag<Movie>();
 
+            // Process each selected movie independently
             var tasks = selectedMovieIds.Select(async id =>
             {
                 var movie = await GetMovieDetailsAsync(id);
-                if (movie == null) return;
+                if (movie == null)
+                {
+                    Console.WriteLine($"[Warning] Movie details not found for ID: {id}. Skipping recommendations for this movie.");
+                    return;
+                }
 
-                // Use TMDb's recommendations endpoint
-                var tmdbRecommendations = await GetTmdbRecommendations(id, recommendationScores, weight: 5);
+                // 1. Fetch Top 2 Similar Movies
+                var tmdbRecommendations = await GetTmdbRecommendations(id, limit: 2);
                 foreach (var recMovie in tmdbRecommendations)
                 {
-                    if (recMovie != null)
+                    if (recMovie != null && !selectedMovieIds.Contains(recMovie.Id))
                     {
-                        recommendations.Add(recMovie);
+                        allSimilarRecommendations.Add(recMovie);
+                        Console.WriteLine($"[Info] Recommended (Similar): '{recMovie.Title}' for selected movie ID: {id}");
                     }
                 }
 
-                // Get movies by genres (limit to 2 per genre)
-                var genreTasks = movie.Genres.Select(async genre =>
+                // 2. Fetch 1 Movie Based on Main Actor/Actress
+                if (movie.Actors != null && movie.Actors.Any())
                 {
-                    var genreMovies = await GetMoviesByCriteria("Genre", genre, recommendationScores, weight: 3, limit: 2);
-                    foreach (var genreMovie in genreMovies)
-                    {
-                        if (genreMovie != null)
-                        {
-                            recommendations.Add(genreMovie);
-                        }
-                    }
-                });
-
-                // Get movies by top actors (limit to 1 per actor)
-                var actorTasks = movie.Actors.Select(async actor =>
-                {
-                    var actorMovies = await GetMoviesByCriteria("Actor", actor.Id.ToString(), recommendationScores, weight: 2, limit: 1);
+                    var mainActor = movie.Actors.First();
+                    var actorMovies = await GetMoviesByCriteria("Actor", mainActor.Id.ToString(), limit: 5); // Increased limit to find unique
                     foreach (var actorMovie in actorMovies)
                     {
-                        if (actorMovie != null)
+                        if (actorMovie != null && !selectedMovieIds.Contains(actorMovie.Id) && !allSimilarRecommendations.Contains(actorMovie))
                         {
-                            recommendations.Add(actorMovie);
+                            allActorRecommendations.Add(actorMovie);
+                            Console.WriteLine($"[Info] Recommended (Actor: {mainActor.Name}): '{actorMovie.Title}' for selected movie ID: {id}");
+                            break; // Only add one recommendation
+                        }
+                        else if (actorMovie != null && selectedMovieIds.Contains(actorMovie.Id))
+                        {
+                            Console.WriteLine($"[Info] Skipping duplicate recommendation (Actor-Based): '{actorMovie.Title}' for selected movie ID: {id}");
                         }
                     }
-                });
-
-                // Get movies by top directors (limit to 1 per director)
-                var directorTasks = movie.Directors.Select(async director =>
+                }
+                else
                 {
-                    var directorMovies = await GetMoviesByCriteria("Director", director.Id.ToString(), recommendationScores, weight: 4, limit: 1);
+                    Console.WriteLine($"[Warning] No actors found for movie ID: {id}. Skipping actor-based recommendation.");
+                }
+
+                // 3. Fetch 1 Movie Based on Director
+                if (movie.Directors != null && movie.Directors.Any())
+                {
+                    var topDirector = movie.Directors.First(); // Consider the first director
+                    var directorMovies = await GetMoviesByDirectorAsync(topDirector.Id.ToString(), limit: 5); // Increased limit to find unique
                     foreach (var directorMovie in directorMovies)
                     {
-                        if (directorMovie != null)
+                        if (directorMovie != null && !selectedMovieIds.Contains(directorMovie.Id) && !allSimilarRecommendations.Contains(directorMovie))
                         {
-                            recommendations.Add(directorMovie);
+                            allDirectorRecommendations.Add(directorMovie);
+                            Console.WriteLine($"[Info] Recommended (Director: {topDirector.Name}): '{directorMovie.Title}' for selected movie ID: {id}");
+                            break; // Only add one recommendation
+                        }
+                        else if (directorMovie != null && selectedMovieIds.Contains(directorMovie.Id))
+                        {
+                            Console.WriteLine($"[Info] Skipping duplicate recommendation (Director-Based): '{directorMovie.Title}' for selected movie ID: {id}");
                         }
                     }
-                });
-
-                await Task.WhenAll(genreTasks.Concat(actorTasks).Concat(directorTasks));
+                }
+                else
+                {
+                    Console.WriteLine($"[Warning] No directors found for movie ID: {id}. Skipping director-based recommendation.");
+                }
             });
 
             await Task.WhenAll(tasks);
 
-            // Filter and sort recommendations
-            var uniqueRecommendations = recommendations
-                .Where(m => m != null && !selectedMovieIds.Contains(m.Id))
+            // Aggregate Recommendations
+            var finalRecommendations = new List<Movie>();
+
+            // 1. Add Top 2 Similar Movies
+            finalRecommendations.AddRange(allSimilarRecommendations.Take(2));
+
+            // 2. Add 1 Actor-Based Movie
+            finalRecommendations.AddRange(allActorRecommendations.Take(1));
+
+            // 3. Add 1 Director-Based Movie
+            finalRecommendations.AddRange(allDirectorRecommendations.Take(1));
+
+            // Ensure there are no duplicates
+            finalRecommendations = finalRecommendations
                 .GroupBy(m => m.Id)
                 .Select(g => g.First())
-                .OrderByDescending(m => recommendationScores.GetValueOrDefault(m.Id, 0))
-                .Take(20)
                 .ToList();
 
-            return uniqueRecommendations ?? new List<Movie>();
+            Console.WriteLine($"[Info] Total recommendations generated: {finalRecommendations.Count}");
+
+            return finalRecommendations ?? new List<Movie>();
         }
 
-        private async Task<List<Movie>> GetTmdbRecommendations(int movieId, ConcurrentDictionary<int, int> recommendationScores, int weight)
+        private async Task<List<Movie>> GetTmdbRecommendations(int movieId, int limit)
         {
             string cacheKey = $"TmdbRecommendations_{movieId}";
             List<Movie>? tmdbRecommendations;
@@ -183,37 +216,18 @@ namespace CineMatch.Api.Services
             if (!_cache.TryGetValue(cacheKey, out tmdbRecommendations) || tmdbRecommendations == null)
             {
                 var endpoint = $"movie/{movieId}/recommendations?api_key={_apiKey}&language=en-US&page=1";
-                tmdbRecommendations = await FetchAndCacheMovies(endpoint, cacheKey, limit: 3); // Limit to 3 recommendations
+                tmdbRecommendations = await FetchAndCacheMovies(endpoint, cacheKey, limit);
                 _cache.Set(cacheKey, tmdbRecommendations, TimeSpan.FromMinutes(60));
-            }
-
-            if (tmdbRecommendations != null)
-            {
-                foreach (var movie in tmdbRecommendations)
-                {
-                    if (movie != null)
-                    {
-                        recommendationScores.AddOrUpdate(movie.Id, weight, (key, oldValue) => oldValue + weight);
-                    }
-                }
             }
 
             return tmdbRecommendations ?? new List<Movie>();
         }
 
-        private async Task<List<Movie>> GetMoviesByCriteria(string criteriaType, string criteriaValue, ConcurrentDictionary<int, int> recommendationScores, int weight, int limit = 3)
+        private async Task<List<Movie>> GetMoviesByCriteria(string criteriaType, string criteriaValue, int limit)
         {
             List<Movie> criteriaMovies = new List<Movie>();
 
-            if (criteriaType == "Director")
-            {
-                var directorMovies = await GetMoviesByDirectorAsync(criteriaValue, recommendationScores, weight, limit);
-                if (directorMovies != null)
-                {
-                    criteriaMovies.AddRange(directorMovies);
-                }
-            }
-            else
+            if (criteriaType == "Actor")
             {
                 string cacheKey = $"{criteriaType}_{criteriaValue}";
                 string endpoint = BuildCriteriaQuery(criteriaType, criteriaValue);
@@ -221,13 +235,6 @@ namespace CineMatch.Api.Services
                 if (fetchedMovies != null)
                 {
                     criteriaMovies.AddRange(fetchedMovies);
-                    foreach (var movie in fetchedMovies)
-                    {
-                        if (movie != null)
-                        {
-                            recommendationScores.AddOrUpdate(movie.Id, weight, (key, oldValue) => oldValue + weight);
-                        }
-                    }
                 }
             }
 
@@ -238,14 +245,12 @@ namespace CineMatch.Api.Services
         {
             return criteriaType switch
             {
-                "Genre" => $"discover/movie?api_key={_apiKey}&with_genres={GetGenreId(criteriaValue)}&sort_by=popularity.desc",
                 "Actor" => $"discover/movie?api_key={_apiKey}&with_cast={criteriaValue}&sort_by=popularity.desc",
-                // Removed "Director" case as it's handled separately
                 _ => throw new ArgumentException("Invalid criteria type")
             };
         }
 
-        private async Task<List<Movie>> GetMoviesByDirectorAsync(string directorId, ConcurrentDictionary<int, int> recommendationScores, int weight, int limit = 2)
+        private async Task<List<Movie>> GetMoviesByDirectorAsync(string directorId, int limit)
         {
             string cacheKey = $"Director_{directorId}_Movies";
             List<Movie>? directorMovies;
@@ -286,19 +291,12 @@ namespace CineMatch.Api.Services
                 }
                 else
                 {
+                    Console.WriteLine($"[Warning] Failed to get movie credits for director ID: {directorId}. Status Code: {response.StatusCode}");
                     directorMovies = new List<Movie>();
                 }
             }
 
             var limitedDirectorMovies = directorMovies?.Take(limit).ToList() ?? new List<Movie>();
-            foreach (var movie in limitedDirectorMovies)
-            {
-                if (movie != null)
-                {
-                    recommendationScores.AddOrUpdate(movie.Id, weight, (key, oldValue) => oldValue + weight);
-                }
-            }
-
             return limitedDirectorMovies;
         }
 
@@ -335,36 +333,12 @@ namespace CineMatch.Api.Services
             }
             else
             {
+                Console.WriteLine($"[Warning] Failed to fetch movies from endpoint: '{endpoint}'. Status Code: {response.StatusCode}");
                 movies = new List<Movie>();
             }
             return movies?.Take(limit).ToList() ?? new List<Movie>();
         }
 
-        private int GetGenreId(string genre)
-        {
-            var genreMap = new Dictionary<string, int>
-            {
-                {"Action", 28},
-                {"Adventure", 12},
-                {"Animation", 16},
-                {"Comedy", 35},
-                {"Crime", 80},
-                {"Documentary", 99},
-                {"Drama", 18},
-                {"Family", 10751},
-                {"Fantasy", 14},
-                {"History", 36},
-                {"Horror", 27},
-                {"Music", 10402},
-                {"Mystery", 9648},
-                {"Romance", 10749},
-                {"Science Fiction", 878},
-                {"TV Movie", 10770},
-                {"Thriller", 53},
-                {"War", 10752},
-                {"Western", 37}
-            };
-            return genreMap.ContainsKey(genre) ? genreMap[genre] : 28; // Default to "Action" if genre not found
-        }
+        // Removed GetGenreId method as it's no longer needed
     }
 }
