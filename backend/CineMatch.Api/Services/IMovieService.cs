@@ -6,6 +6,6 @@ namespace CineMatch.Api.Services
     {
         Task<List<Movie>> SearchMoviesAsync(string query);
         Task<Movie?> GetMovieDetailsAsync(int movieId);
-        Task<List<Movie>> GetRecommendationsAsync(List<int> selectedMovieIds, string? platformFilter);
+        Task<List<Movie>> GetRecommendationsAsync(List<int> selectedMovieIds);
     }
 }

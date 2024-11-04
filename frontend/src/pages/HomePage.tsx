@@ -81,14 +81,13 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="bg-background min-h-screen flex flex-col">
-      <div className="flex-grow p-6">
+      <div className="flex-grow">
         {recommendations.length === 0 ? (
           <div>
             <div className="p-6 text-center">
               <p className="text-text text-lg mb-6">
-                Discover movies that match your taste! Use the search bar below
-                to find movies you like, select up to 5 favorites, and get
-                personalized recommendations.
+                Find movies that match your taste! Search below, pick up to 5
+                favorites, and get personalized recommendations.
               </p>
             </div>
             <SearchBar
@@ -100,7 +99,7 @@ const HomePage: React.FC = () => {
             />
           </div>
         ) : (
-          <div className="flex justify-center">
+          <div className="flex justify-center m-6">
             <button
               onClick={handleSearchAgain}
               className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-md shadow transition-colors duration-300 mb-6"

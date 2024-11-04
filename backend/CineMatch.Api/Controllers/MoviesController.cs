@@ -45,7 +45,7 @@ namespace CineMatch.Api.Controllers
             if (request.SelectedMovieIds == null || !request.SelectedMovieIds.Any())
                 return BadRequest("At least one selected movie is required.");
 
-            var recommendations = await _movieService.GetRecommendationsAsync(request.SelectedMovieIds, request.PlatformFilter);
+            var recommendations = await _movieService.GetRecommendationsAsync(request.SelectedMovieIds);
             return Ok(recommendations);
         }
     }

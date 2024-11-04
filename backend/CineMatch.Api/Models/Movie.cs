@@ -7,8 +7,7 @@ namespace CineMatch.Api.Models
         public string PosterPath { get; set; } = string.Empty;
         public string Overview { get; set; } = string.Empty;
         public List<string> Genres { get; set; } = new List<string>();
-        public List<string> Actors { get; set; } = new List<string>();
-        public List<string> Directors { get; set; } = new List<string>();
-        public List<string> StreamingPlatforms { get; set; } = new List<string>();
+        public List<Person> Actors { get; set; } = new List<Person>();
+        public List<Person> Directors { get; set; } = new List<Person>();
     }
 }
