@@ -23,7 +23,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         builder =>
         {
-            builder.WithOrigins("http://localhost:3000")
+            builder.WithOrigins("https://cine-match-rho.vercel.app")
                    .AllowAnyHeader()
                    .AllowAnyMethod();
         });
