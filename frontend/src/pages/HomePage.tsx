@@ -86,8 +86,8 @@ const HomePage: React.FC = () => {
           <div>
             <div className="p-6 text-center">
               <p className="text-text text-lg mb-6">
-                Find movies that match your taste! Search below, pick up to 5
-                favorites, and get personalized recommendations.
+                Discover movies that match your taste! Select up to 5 favorites
+                below, and receive personalized recommendations.
               </p>
             </div>
             <SearchBar
