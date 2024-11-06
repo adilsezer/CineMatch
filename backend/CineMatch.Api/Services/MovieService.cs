@@ -126,12 +126,9 @@ namespace CineMatch.Api.Services
                 return new List<Movie>();
             }
 
-            // Shuffle the selectedMovieIds to ensure randomness
             var shuffledMovieIds = selectedMovieIds.OrderBy(x => _random.Next()).ToList();
 
-            // Assign different movies for each recommendation type
-            // Ensure that there are enough movies; if not, reuse the available ones
-            int recommendationTypes = 3; // Similar, Actor-Based, Director-Based
+            int recommendationTypes = 3;
             var selectedForRecommendations = new List<int>();
 
             for (int i = 0; i < recommendationTypes && i < shuffledMovieIds.Count; i++)
@@ -139,26 +136,19 @@ namespace CineMatch.Api.Services
                 selectedForRecommendations.Add(shuffledMovieIds[i]);
             }
 
-            // If there are fewer selected movies than recommendation types, allow reuse
             while (selectedForRecommendations.Count < recommendationTypes)
             {
                 selectedForRecommendations.Add(shuffledMovieIds[_random.Next(shuffledMovieIds.Count)]);
             }
 
-            // Extract distinct movie IDs for each recommendation type
-            // similarMovieId: selectedForRecommendations[0]
-            // actorMovieId: selectedForRecommendations[1]
-            // directorMovieId: selectedForRecommendations[2]
             int similarMovieId = selectedForRecommendations[0];
             int actorMovieId = selectedForRecommendations[1];
             int directorMovieId = selectedForRecommendations[2];
 
-            // Initialize collections for different recommendation types
             var similarRecommendations = new ConcurrentBag<Movie>();
             var actorRecommendations = new ConcurrentBag<Movie>();
             var directorRecommendations = new ConcurrentBag<Movie>();
 
-            // Process Similar Recommendations
             var similarMovie = await GetMovieDetailsAsync(similarMovieId);
             if (similarMovie != null)
             {
