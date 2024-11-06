@@ -3,7 +3,7 @@ name: Deploy Backend to Azure
 on:
   push:
     branches:
-      - main  # Use the branch name where your code is located
+      - main # Use the branch name where your code is located
 
 jobs:
   build-and-deploy:
@@ -16,17 +16,18 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: '8.0'  # Set to the correct .NET version
+          dotnet-version: "8.0" # Set to the correct .NET version
 
       - name: Build and Publish .NET Project
         run: |
-          cd backend
-          dotnet publish -c Release -o publish
+          cd backend/CineMatch.Api   # Change to the directory with the .sln file
+          dotnet build --configuration Release   # Build the project
+          dotnet publish -c Release -o publish   # Publish the project
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: CineMatchBackend
+          app-name: CineMatchBackend # Replace with your Azure Web App name
           slot-name: Production
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./backend/publish
+          package: ./backend/CineMatch.Api/publish
